@@ -52,14 +52,8 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 		return err
 	}
 
-	// Determine end ref
-	endRef := "HEAD"
-	if opts.EndCommit != "" {
-		endRef = opts.EndCommit
-	}
-
 	// Collect commits
-	commits, err := client.CommitRange(opts.StartCommit, endRef)
+	commits, err := client.CommitRange(opts.StartCommit, opts.EndRef())
 	if err != nil {
 		return err
 	}

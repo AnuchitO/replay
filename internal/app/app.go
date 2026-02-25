@@ -11,7 +11,7 @@ type RunOptions struct {
 	EndCommit   string // empty defaults to "HEAD"
 }
 
-func (o RunOptions) endRef() string {
+func (o RunOptions) EndRef() string {
 	if o.EndCommit == "" {
 		return "HEAD"
 	}
@@ -40,7 +40,7 @@ func Validate(client git.GitClient, opts RunOptions) error {
 		return fmt.Errorf("invalid start commit: %s", opts.StartCommit)
 	}
 
-	endRef := opts.endRef()
+	endRef := opts.EndRef()
 	if opts.EndCommit != "" {
 		if err := client.ValidateCommit(opts.EndCommit); err != nil {
 			return fmt.Errorf("invalid end commit: %s", opts.EndCommit)
