@@ -8,9 +8,22 @@ import (
 	"github.com/anuchito/replay/internal/navigator"
 )
 
+type GitClient interface {
+	IsRepo() (bool, error)
+	IsClean() (bool, error)
+	ValidateCommit(hash string) error
+	IsAncestor(commit, of string) (bool, error)
+	CommitRange(from, to string) ([]navigator.Commit, error)
+	CurrentBranch() (string, error)
+	Checkout(ref string) error
+}
+
 type Client struct {
 	dir string
 }
+
+// Compile-time check that Client implements GitClient.
+var _ GitClient = (*Client)(nil)
 
 func NewClient(dir string) *Client {
 	return &Client{dir: dir}
