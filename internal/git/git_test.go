@@ -209,6 +209,27 @@ func TestCheckout(t *testing.T) {
 	}
 }
 
+// CommitRange with a subset (not to HEAD) — e.g., commit 1 to commit 3 of 5
+func TestCommitRange_Subset(t *testing.T) {
+	dir, hashes := setupTestRepo(t, 5)
+	client := NewClient(dir)
+
+	// Range from commit 2 to commit 4 (not HEAD which is commit 5)
+	commits, err := client.CommitRange(hashes[1], hashes[3])
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(commits) != 3 {
+		t.Fatalf("expected 3 commits (2,3,4), got %d", len(commits))
+	}
+	if commits[0].Hash != hashes[1][:7] {
+		t.Errorf("expected first commit hash %s, got %s", hashes[1][:7], commits[0].Hash)
+	}
+	if commits[2].Hash != hashes[3][:7] {
+		t.Errorf("expected last commit hash %s, got %s", hashes[3][:7], commits[2].Hash)
+	}
+}
+
 // Ensure CommitRange returns navigator.Commit type
 func TestCommitRange_ReturnsNavigatorCommits(t *testing.T) {
 	dir, hashes := setupTestRepo(t, 2)
