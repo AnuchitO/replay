@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/anuchito/replay/internal/app"
 	"github.com/anuchito/replay/internal/git"
 	"github.com/anuchito/replay/internal/navigator"
 	"github.com/anuchito/replay/internal/ui"
@@ -13,10 +14,16 @@ import (
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: replay <start-commit>\n")
+		fmt.Fprintf(os.Stderr, "Usage: replay <start-commit> [end-commit]\n")
 		os.Exit(1)
 	}
-	startCommit := os.Args[1]
+
+	opts := app.RunOptions{
+		StartCommit: os.Args[1],
+	}
+	if len(os.Args) >= 3 {
+		opts.EndCommit = os.Args[2]
+	}
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -27,53 +34,32 @@ func main() {
 	client := git.NewClient(cwd)
 	display := ui.New(os.Stdout)
 
-	if err := run(client, display, startCommit); err != nil {
+	if err := run(client, display, opts); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
 
-func run(client git.GitClient, display *ui.UI, startCommit string) error {
-	// 1. Ensure we are inside a Git repository
-	isRepo, err := client.IsRepo()
-	if err != nil {
+func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
+	// Validate preconditions
+	if err := app.Validate(client, opts); err != nil {
 		return err
 	}
-	if !isRepo {
-		return fmt.Errorf("not a git repository")
-	}
 
-	// 2. Detect dirty working tree
-	clean, err := client.IsClean()
-	if err != nil {
-		return err
-	}
-	if !clean {
-		return fmt.Errorf("working tree is dirty, please commit or stash your changes")
-	}
-
-	// 3. Validate the provided commit exists
-	if err := client.ValidateCommit(startCommit); err != nil {
-		return fmt.Errorf("invalid commit: %s", startCommit)
-	}
-
-	// 4. Ensure the commit is an ancestor of HEAD
-	isAnc, err := client.IsAncestor(startCommit, "HEAD")
-	if err != nil {
-		return err
-	}
-	if !isAnc {
-		return fmt.Errorf("commit %s is not an ancestor of HEAD", startCommit)
-	}
-
-	// 5. Save original branch/state
+	// Save original branch/state
 	originalRef, err := client.CurrentBranch()
 	if err != nil {
 		return err
 	}
 
-	// 6. Collect commits from start to HEAD
-	commits, err := client.CommitRange(startCommit, "HEAD")
+	// Determine end ref
+	endRef := "HEAD"
+	if opts.EndCommit != "" {
+		endRef = opts.EndCommit
+	}
+
+	// Collect commits
+	commits, err := client.CommitRange(opts.StartCommit, endRef)
 	if err != nil {
 		return err
 	}
@@ -81,7 +67,7 @@ func run(client git.GitClient, display *ui.UI, startCommit string) error {
 		return fmt.Errorf("no commits in range")
 	}
 
-	// 7. Create navigator
+	// Create navigator
 	nav, err := navigator.NewNavigator(commits)
 	if err != nil {
 		return err
@@ -102,20 +88,19 @@ func run(client git.GitClient, display *ui.UI, startCommit string) error {
 		client.Checkout(originalRef)
 	}()
 
-	// 8. Checkout starting commit
+	// Checkout starting commit
 	cur := nav.Current()
 	if err := client.Checkout(cur.Hash); err != nil {
 		return err
 	}
 
-	// 9. Enter interactive mode
+	// Enter interactive mode
 	display.PrintBanner()
 	pos, total := nav.Position()
 	display.PrintCommit(cur, pos, total)
 
 	// Raw terminal input
 	buf := make([]byte, 1)
-	// Set terminal to raw mode
 	oldState, err := makeRaw(os.Stdin.Fd())
 	if err != nil {
 		return fmt.Errorf("failed to set raw mode: %v", err)

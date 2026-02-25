@@ -32,7 +32,7 @@ go.work.sum
 # .vscode/
 
 # Build binary
-replay
+/replay
 
 # Claude Code
 .claude/
