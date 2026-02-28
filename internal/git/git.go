@@ -14,6 +14,7 @@ type GitClient interface {
 	ValidateCommit(hash string) error
 	IsAncestor(commit, of string) (bool, error)
 	CommitRange(from, to string) ([]navigator.Commit, error)
+	Log(n int) ([]navigator.Commit, error)
 	CurrentBranch() (string, error)
 	Checkout(ref string) error
 }
@@ -82,6 +83,33 @@ func (c *Client) CommitRange(from, to string) ([]navigator.Commit, error) {
 			return nil, fmt.Errorf("git log: %w", err)
 		}
 		out = fromOut + "\n" + out
+	}
+
+	lines := strings.Split(out, "\n")
+	var commits []navigator.Commit
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, " ", 2)
+		hash := parts[0][:7]
+		msg := ""
+		if len(parts) > 1 {
+			msg = parts[1]
+		}
+		commits = append(commits, navigator.Commit{Hash: hash, Message: msg})
+	}
+	return commits, nil
+}
+
+func (c *Client) Log(n int) ([]navigator.Commit, error) {
+	out, err := c.run("log", "--format=%H %s", fmt.Sprintf("-%d", n))
+	if err != nil {
+		return nil, fmt.Errorf("git log: %w", err)
+	}
+	if out == "" {
+		return nil, nil
 	}
 
 	lines := strings.Split(out, "\n")

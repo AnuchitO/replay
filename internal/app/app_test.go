@@ -30,6 +30,7 @@ func (m *mockGitClient) ValidateCommit(hash string) error {
 	return nil
 }
 func (m *mockGitClient) IsAncestor(_, _ string) (bool, error) { return m.isAncestor, nil }
+func (m *mockGitClient) Log(_ int) ([]navigator.Commit, error) { return m.commits, nil }
 func (m *mockGitClient) CommitRange(_, _ string) ([]navigator.Commit, error) {
 	return m.commits, m.commitRangeErr
 }
