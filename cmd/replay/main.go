@@ -14,19 +14,9 @@ import (
 	"github.com/anuchito/replay/internal/ui"
 )
 
+const defaultLogSize = 30
+
 func main() {
-	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, "Usage: replay <start-commit> [end-commit]\n")
-		os.Exit(1)
-	}
-
-	opts := app.RunOptions{
-		StartCommit: os.Args[1],
-	}
-	if len(os.Args) >= 3 {
-		opts.EndCommit = os.Args[2]
-	}
-
 	cwd, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
@@ -36,10 +26,58 @@ func main() {
 	client := git.NewClient(cwd)
 	display := ui.New(os.Stdout)
 
+	var opts app.RunOptions
+
+	switch len(os.Args) {
+	case 1:
+		// No args — show interactive picker
+		selected, err := pickStartCommit(client)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+			os.Exit(1)
+		}
+		if selected == nil {
+			os.Exit(0)
+		}
+		opts.StartCommit = selected.Hash
+	case 2:
+		opts.StartCommit = os.Args[1]
+	default:
+		opts.StartCommit = os.Args[1]
+		opts.EndCommit = os.Args[2]
+	}
+
 	if err := run(client, display, opts); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
+}
+
+func pickStartCommit(client git.GitClient) (*navigator.Commit, error) {
+	isRepo, err := client.IsRepo()
+	if err != nil {
+		return nil, err
+	}
+	if !isRepo {
+		return nil, fmt.Errorf("not a git repository")
+	}
+
+	commits, err := client.Log(defaultLogSize)
+	if err != nil {
+		return nil, err
+	}
+	if len(commits) == 0 {
+		return nil, fmt.Errorf("no commits found")
+	}
+
+	// Enter raw mode for the picker
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
+	if err != nil {
+		return nil, fmt.Errorf("failed to set raw mode: %v", err)
+	}
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
+
+	return ui.PickCommit(commits, os.Stdin, os.Stdout, 20)
 }
 
 func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
