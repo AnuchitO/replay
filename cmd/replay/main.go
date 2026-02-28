@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"golang.org/x/term"
+
 	"github.com/anuchito/replay/internal/app"
 	"github.com/anuchito/replay/internal/git"
 	"github.com/anuchito/replay/internal/navigator"
@@ -95,11 +97,11 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 
 	// Raw terminal input
 	buf := make([]byte, 1)
-	oldState, err := makeRaw(os.Stdin.Fd())
+	oldState, err := term.MakeRaw(int(os.Stdin.Fd()))
 	if err != nil {
 		return fmt.Errorf("failed to set raw mode: %v", err)
 	}
-	defer restore(os.Stdin.Fd(), oldState)
+	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
 	for {
 		_, err := os.Stdin.Read(buf)
