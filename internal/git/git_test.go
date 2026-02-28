@@ -246,3 +246,33 @@ func TestCommitRange_ReturnsNavigatorCommits(t *testing.T) {
 		t.Fatalf("expected 2 commits, got %d", len(commits))
 	}
 }
+
+func TestLog(t *testing.T) {
+	dir, _ := setupTestRepo(t, 5)
+	client := NewClient(dir)
+
+	commits, err := client.Log(3)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(commits) != 3 {
+		t.Fatalf("expected 3 commits, got %d", len(commits))
+	}
+	// Should be in reverse chronological order (newest first)
+	if commits[0].Message != "commit 5" {
+		t.Errorf("expected newest commit first, got %s", commits[0].Message)
+	}
+}
+
+func TestLog_MoreThanAvailable(t *testing.T) {
+	dir, _ := setupTestRepo(t, 2)
+	client := NewClient(dir)
+
+	commits, err := client.Log(10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(commits) != 2 {
+		t.Fatalf("expected 2 commits (all available), got %d", len(commits))
+	}
+}
