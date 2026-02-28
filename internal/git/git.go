@@ -69,6 +69,25 @@ func (c *Client) IsAncestor(commit, of string) (bool, error) {
 	return true, nil
 }
 
+func parseCommitLines(out string) []navigator.Commit {
+	lines := strings.Split(out, "\n")
+	var commits []navigator.Commit
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, " ", 2)
+		hash := parts[0][:7]
+		msg := ""
+		if len(parts) > 1 {
+			msg = parts[1]
+		}
+		commits = append(commits, navigator.Commit{Hash: hash, Message: msg})
+	}
+	return commits
+}
+
 func (c *Client) CommitRange(from, to string) ([]navigator.Commit, error) {
 	out, err := c.run("log", "--reverse", "--format=%H %s", from+"^.."+to)
 	if err != nil {
@@ -84,23 +103,7 @@ func (c *Client) CommitRange(from, to string) ([]navigator.Commit, error) {
 		}
 		out = fromOut + "\n" + out
 	}
-
-	lines := strings.Split(out, "\n")
-	var commits []navigator.Commit
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		parts := strings.SplitN(line, " ", 2)
-		hash := parts[0][:7]
-		msg := ""
-		if len(parts) > 1 {
-			msg = parts[1]
-		}
-		commits = append(commits, navigator.Commit{Hash: hash, Message: msg})
-	}
-	return commits, nil
+	return parseCommitLines(out), nil
 }
 
 func (c *Client) Log(n int) ([]navigator.Commit, error) {
@@ -111,23 +114,7 @@ func (c *Client) Log(n int) ([]navigator.Commit, error) {
 	if out == "" {
 		return nil, nil
 	}
-
-	lines := strings.Split(out, "\n")
-	var commits []navigator.Commit
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		parts := strings.SplitN(line, " ", 2)
-		hash := parts[0][:7]
-		msg := ""
-		if len(parts) > 1 {
-			msg = parts[1]
-		}
-		commits = append(commits, navigator.Commit{Hash: hash, Message: msg})
-	}
-	return commits, nil
+	return parseCommitLines(out), nil
 }
 
 func (c *Client) CurrentBranch() (string, error) {
