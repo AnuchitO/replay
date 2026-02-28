@@ -106,7 +106,7 @@ func TestPicker_Render(t *testing.T) {
 	lines := strings.Split(out, "\n")
 	foundCursor := false
 	for _, line := range lines {
-		if strings.Contains(line, "abc1234") && strings.Contains(line, "▸") {
+		if strings.Contains(line, "abc1234") && strings.Contains(line, ">") {
 			foundCursor = true
 			break
 		}
@@ -129,7 +129,7 @@ func TestPicker_Render_AfterMove(t *testing.T) {
 	// Cursor should be on second commit
 	foundCursor := false
 	for _, line := range lines {
-		if strings.Contains(line, "def5678") && strings.Contains(line, "▸") {
+		if strings.Contains(line, "def5678") && strings.Contains(line, ">") {
 			foundCursor = true
 			break
 		}

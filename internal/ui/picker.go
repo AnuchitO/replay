@@ -47,6 +47,7 @@ func (p *Picker) Selected() navigator.Commit {
 
 func (p *Picker) Render(w io.Writer) {
 	fmt.Fprintln(w, "Select a commit to replay from:")
+	fmt.Fprintln(w, "j/↓ down  k/↑ up  Enter select  q quit")
 	fmt.Fprintln(w)
 
 	end := p.offset + p.pageSize
@@ -57,9 +58,35 @@ func (p *Picker) Render(w io.Writer) {
 	for i := p.offset; i < end; i++ {
 		c := p.commits[i]
 		if i == p.cursor {
-			fmt.Fprintf(w, "  ▸ %s  %s\n", c.Hash, c.Message)
+			fmt.Fprintf(w, "> %s %s\n", c.Hash, c.Message)
 		} else {
-			fmt.Fprintf(w, "    %s  %s\n", c.Hash, c.Message)
+			fmt.Fprintf(w, "  %s %s\n", c.Hash, c.Message)
+		}
+	}
+}
+
+// visibleLines returns how many commit lines are currently displayed.
+func (p *Picker) visibleLines() int {
+	end := p.offset + p.pageSize
+	if end > len(p.commits) {
+		end = len(p.commits)
+	}
+	return end - p.offset
+}
+
+// renderRaw writes the picker list for raw terminal mode using \r\n.
+func (p *Picker) renderRaw(w io.Writer) {
+	end := p.offset + p.pageSize
+	if end > len(p.commits) {
+		end = len(p.commits)
+	}
+
+	for i := p.offset; i < end; i++ {
+		c := p.commits[i]
+		if i == p.cursor {
+			fmt.Fprintf(w, "\x1b[2K> %s %s\r\n", c.Hash, c.Message)
+		} else {
+			fmt.Fprintf(w, "\x1b[2K  %s %s\r\n", c.Hash, c.Message)
 		}
 	}
 }
@@ -68,7 +95,14 @@ func (p *Picker) Render(w io.Writer) {
 // Returns the selected commit, or nil if the user quits.
 func PickCommit(commits []navigator.Commit, in io.Reader, out io.Writer, pageSize int) (*navigator.Commit, error) {
 	p := NewPicker(commits, pageSize)
-	p.Render(out)
+
+	// Print header (stays fixed)
+	fmt.Fprint(out, "Select a commit to replay from:\r\n")
+	fmt.Fprint(out, "j/↓ down  k/↑ up  Enter select  q quit\r\n")
+	fmt.Fprint(out, "\r\n")
+
+	// Initial render
+	p.renderRaw(out)
 
 	oneByte := make([]byte, 1)
 	for {
@@ -107,8 +141,9 @@ func PickCommit(commits []navigator.Commit, in io.Reader, out io.Writer, pageSiz
 			continue
 		}
 
-		// Re-render
-		fmt.Fprint(out, "\033[2J\033[H") // clear screen
-		p.Render(out)
+		// Move cursor up to beginning of list and re-render in place
+		lines := p.visibleLines()
+		fmt.Fprintf(out, "\x1b[%dA", lines) // move up N lines
+		p.renderRaw(out)
 	}
 }
