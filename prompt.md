@@ -1,20 +1,8 @@
 You are an expert Go systems engineer.
 
-use TDG to implement it for me
-
 We are building a production-quality CLI tool called "replay".
 
 The tool must be implemented in Go.
-
-Development Methodology:
-Use strict TDG (Test-Driven Generation).
-- Write tests first.
-- Make them fail.
-- Implement minimal code to pass.
-- Refactor.
-- Repeat.
-- Do NOT skip writing tests.
-- Do NOT implement everything at once.
 
 ----------------------------------------
 PROJECT GOAL
@@ -38,7 +26,7 @@ Behavior:
 4. Collect all commits from <start-commit> to HEAD in chronological order.
 5. Save the user's original branch or detached HEAD state.
 6. Checkout the starting commit.
-7. Enter interactive navigation mode.
+7. Enter interactive navigation mode.`
 
 ----------------------------------------
 INTERACTIVE MODE
@@ -108,12 +96,13 @@ TESTING REQUIREMENTS
 TECHNICAL CONSTRAINTS
 ----------------------------------------
 
-- Go 1.22+
+- Go 1.26+
 - No heavy dependencies
 - Prefer standard library
+- Cross-platform (Linux, macOS)
 - OK to use:
     - cobra (CLI parsing)
-    - termios or minimal TTY library if needed
+    - termios or minimal TTY library if needed (use golang.org/x/term for TTY handling cross-platform)
 - Avoid large TUI frameworks unless absolutely necessary
 - Produce a single binary
 
@@ -133,29 +122,3 @@ Show current commit information after every action.
 
 Keep output clean and developer-focused.
 
-----------------------------------------
-DEVELOPMENT PROCESS
-----------------------------------------
-
-Step 1:
-Propose full project structure.
-
-Step 2:
-Write failing tests for navigator logic.
-
-Step 3:
-Implement navigator.
-
-Step 4:
-Write failing tests for git layer.
-
-Step 5:
-Implement git layer.
-
-Step 6:
-Wire interactive mode.
-
-Work iteratively.
-Explain reasoning at each stage.
-Do not skip steps.
-Do not dump the entire implementation at once.
