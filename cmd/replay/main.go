@@ -26,6 +26,15 @@ func main() {
 	client := git.NewClient(cwd)
 	display := ui.New(os.Stdout)
 
+	// Handle help flags
+	if len(os.Args) >= 2 {
+		switch os.Args[1] {
+		case "-h", "--help", "help":
+			printUsage()
+			os.Exit(0)
+		}
+	}
+
 	var opts app.RunOptions
 
 	switch len(os.Args) {
@@ -182,3 +191,32 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 		}
 	}
 }
+
+func printUsage() {
+	fmt.Print(`replay - interactively navigate Git commit history
+
+Usage:
+  replay                          Select a commit interactively
+  replay <start-commit>           Replay from commit to HEAD
+  replay <start-commit> <end>     Replay from commit to end commit
+  replay -h, --help               Show this help
+
+Interactive picker controls:
+  j / ↓      Move down
+  k / ↑      Move up
+  Enter      Select commit
+  q          Quit
+
+Replay mode controls:
+  n          Next commit
+  p          Previous commit
+  q          Quit and restore original state
+  Ctrl+C     Quit and restore original state
+
+Examples:
+  replay                          Browse and pick a commit
+  replay abc1234                  Replay from abc1234 to HEAD
+  replay abc1234 def5678          Replay from abc1234 to def5678
+`)
+}
+
