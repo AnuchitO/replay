@@ -25,9 +25,9 @@ func (u *UI) PrintBanner() {
 }
 
 func (u *UI) PrintCommit(commit navigator.Commit, current, total int) {
-	fmt.Fprintf(u.out, "[%d/%d] %s %s\n", current, total, commit.Hash, commit.Message)
+	fmt.Fprintf(u.out, "[%d/%d] %s %s\r\n", current, total, commit.Hash, commit.Message)
 }
 
 func (u *UI) PrintError(msg string) {
-	fmt.Fprintf(u.out, "Error: %s\n", msg)
+	fmt.Fprintf(u.out, "Error: %s\r\n", msg)
 }
