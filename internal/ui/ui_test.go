@@ -47,6 +47,19 @@ func TestPrintCommit(t *testing.T) {
 	}
 }
 
+func TestPrintCommit_UsesRawNewline(t *testing.T) {
+	var buf bytes.Buffer
+	u := New(&buf)
+
+	commit := navigator.Commit{Hash: "abc1234", Message: "add feature"}
+	u.PrintCommit(commit, 1, 5)
+
+	out := buf.String()
+	if !strings.HasSuffix(out, "\r\n") {
+		t.Errorf("PrintCommit should end with \\r\\n for raw terminal compatibility, got %q", out)
+	}
+}
+
 func TestPrintError(t *testing.T) {
 	var buf bytes.Buffer
 	u := New(&buf)
@@ -55,5 +68,16 @@ func TestPrintError(t *testing.T) {
 	out := buf.String()
 	if !strings.Contains(out, "something went wrong") {
 		t.Error("should contain error message")
+	}
+}
+
+func TestPrintError_UsesRawNewline(t *testing.T) {
+	var buf bytes.Buffer
+	u := New(&buf)
+	u.PrintError("something went wrong")
+
+	out := buf.String()
+	if !strings.HasSuffix(out, "\r\n") {
+		t.Errorf("PrintError should end with \\r\\n for raw terminal compatibility, got %q", out)
 	}
 }
