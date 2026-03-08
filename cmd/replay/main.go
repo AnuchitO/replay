@@ -121,7 +121,7 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-sigCh
-		fmt.Println("\nRestoring original state...")
+		fmt.Print("\r\nRestoring original state...\r\n")
 		client.Checkout(originalRef)
 		os.Exit(0)
 	}()
@@ -182,11 +182,11 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 			display.PrintCommit(cur, pos, total)
 
 		case 'q':
-			fmt.Println("\nRestoring original state...")
+			fmt.Print("\r\nRestoring original state...\r\n")
 			return nil
 
 		case 3: // Ctrl+C
-			fmt.Println("\nRestoring original state...")
+			fmt.Print("\r\nRestoring original state...\r\n")
 			return nil
 		}
 	}
