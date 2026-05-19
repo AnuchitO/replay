@@ -17,6 +17,7 @@ type GitClient interface {
 	Log(n int) ([]navigator.Commit, error)
 	CurrentBranch() (string, error)
 	Checkout(ref string) error
+	ShowDiff(hash string) ([]string, error)
 }
 
 type Client struct {
@@ -136,4 +137,18 @@ func (c *Client) Checkout(ref string) error {
 		return fmt.Errorf("git checkout %s: %w", ref, err)
 	}
 	return nil
+}
+
+// ShowDiff returns the diff lines introduced by the given commit.
+func (c *Client) ShowDiff(hash string) ([]string, error) {
+	out, err := c.run("show", "--format=", "--no-color", hash)
+	if err != nil {
+		return nil, fmt.Errorf("git show: %w", err)
+	}
+	all := strings.Split(out, "\n")
+	// git show --format= produces a leading blank line; skip it
+	for len(all) > 0 && all[0] == "" {
+		all = all[1:]
+	}
+	return all, nil
 }

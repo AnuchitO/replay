@@ -39,6 +39,7 @@ func (m *mockGitClient) Checkout(ref string) error {
 	m.checkoutCalls = append(m.checkoutCalls, ref)
 	return nil
 }
+func (m *mockGitClient) ShowDiff(_ string) ([]string, error) { return nil, nil }
 
 func TestValidate_WithEndCommit(t *testing.T) {
 	mock := &mockGitClient{
