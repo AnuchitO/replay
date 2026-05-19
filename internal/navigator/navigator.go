@@ -48,3 +48,11 @@ func (n *Navigator) Prev() error {
 func (n *Navigator) Position() (int, int) {
 	return n.current + 1, len(n.commits)
 }
+
+// Peek returns the next commit without moving. Returns false if at the end.
+func (n *Navigator) Peek() (Commit, bool) {
+	if n.current >= len(n.commits)-1 {
+		return Commit{}, false
+	}
+	return n.commits[n.current+1], true
+}
