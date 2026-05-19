@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -150,6 +151,44 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 	}
 	defer term.Restore(int(os.Stdin.Fd()), oldState)
 
+	dv := ui.NewDiffView()
+
+	// loadNextDiff fetches the diff for the next commit and caches it in dv.
+	loadNextDiff := func() {
+		next, ok := nav.Peek()
+		if !ok {
+			dv.SetDiff(nil)
+			return
+		}
+		lines, err := client.ShowDiff(next.Hash)
+		if err != nil {
+			dv.SetDiff(nil)
+			return
+		}
+		dv.SetDiff(lines)
+	}
+
+	// renderDetail performs a full-screen redraw of the detail view.
+	renderDetail := func() {
+		termW, termH, err := term.GetSize(int(os.Stdout.Fd()))
+		if err != nil {
+			termW, termH = 80, 24
+		}
+		cur := nav.Current()
+		pos, total := nav.Position()
+		next, hasNext := nav.Peek()
+		dv.Render(os.Stdout, termW, termH, cur, next, hasNext, pos, total)
+	}
+
+	// exitDetail clears the screen and returns to append-style output.
+	exitDetail := func() {
+		fmt.Print("\x1b[2J\x1b[H")
+		display.PrintBanner()
+		cur := nav.Current()
+		pos, total := nav.Position()
+		display.PrintCommit(cur, pos, total)
+	}
+
 	for {
 		_, err := os.Stdin.Read(buf)
 		if err != nil {
@@ -159,33 +198,97 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 		switch buf[0] {
 		case 'n':
 			if err := nav.Next(); err != nil {
-				display.PrintError(err.Error())
+				if !dv.Active {
+					display.PrintError(err.Error())
+				}
 				continue
 			}
 			cur = nav.Current()
 			if err := client.Checkout(cur.Hash); err != nil {
 				return err
 			}
-			pos, total = nav.Position()
-			display.PrintCommit(cur, pos, total)
+			if dv.Active {
+				loadNextDiff()
+				renderDetail()
+			} else {
+				pos, total = nav.Position()
+				display.PrintCommit(cur, pos, total)
+			}
 
 		case 'p':
 			if err := nav.Prev(); err != nil {
-				display.PrintError(err.Error())
+				if !dv.Active {
+					display.PrintError(err.Error())
+				}
 				continue
 			}
 			cur = nav.Current()
 			if err := client.Checkout(cur.Hash); err != nil {
 				return err
 			}
-			pos, total = nav.Position()
-			display.PrintCommit(cur, pos, total)
+			if dv.Active {
+				loadNextDiff()
+				renderDetail()
+			} else {
+				pos, total = nav.Position()
+				display.PrintCommit(cur, pos, total)
+			}
+
+		case 'd':
+			dv.Toggle()
+			if dv.Active {
+				loadNextDiff()
+				renderDetail()
+			} else {
+				exitDetail()
+			}
+
+		case 'j':
+			if dv.Active {
+				_, termH, _ := term.GetSize(int(os.Stdout.Fd()))
+				dv.ScrollDown(termH)
+				renderDetail()
+			}
+
+		case 'k':
+			if dv.Active {
+				dv.ScrollUp()
+				renderDetail()
+			}
+
+		case 0x1b: // escape sequence (arrow keys)
+			seq := make([]byte, 2)
+			if _, err := io.ReadFull(os.Stdin, seq); err != nil {
+				continue
+			}
+			if seq[0] != '[' {
+				continue
+			}
+			switch seq[1] {
+			case 'A': // arrow up
+				if dv.Active {
+					dv.ScrollUp()
+					renderDetail()
+				}
+			case 'B': // arrow down
+				if dv.Active {
+					_, termH, _ := term.GetSize(int(os.Stdout.Fd()))
+					dv.ScrollDown(termH)
+					renderDetail()
+				}
+			}
 
 		case 'q':
+			if dv.Active {
+				fmt.Print("\x1b[2J\x1b[H")
+			}
 			fmt.Print("\r\nRestoring original state...\r\n")
 			return nil
 
 		case 3: // Ctrl+C
+			if dv.Active {
+				fmt.Print("\x1b[2J\x1b[H")
+			}
 			fmt.Print("\r\nRestoring original state...\r\n")
 			return nil
 		}
@@ -210,6 +313,9 @@ Interactive picker controls:
 Replay mode controls:
   n          Next commit
   p          Previous commit
+  d          Toggle next-commit diff preview (on/off)
+  j / ↓      Scroll diff down  (detail mode)
+  k / ↑      Scroll diff up    (detail mode)
   q          Quit and restore original state
   Ctrl+C     Quit and restore original state
 
@@ -219,4 +325,3 @@ Examples:
   replay abc1234 def5678          Replay from abc1234 to def5678
 `)
 }
-
