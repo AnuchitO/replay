@@ -49,22 +49,26 @@ func (dv *DiffView) visibleLines(termH int) int {
 	return v
 }
 
-func (dv *DiffView) ScrollDown(termH int) {
+func (dv *DiffView) scrollBy(n, termH int) {
 	va := dv.visibleLines(termH)
 	max := len(dv.diffLines) - va
 	if max < 0 {
 		max = 0
 	}
-	if dv.scrollOffset < max {
-		dv.scrollOffset++
+	dv.scrollOffset += n
+	if dv.scrollOffset > max {
+		dv.scrollOffset = max
+	}
+	if dv.scrollOffset < 0 {
+		dv.scrollOffset = 0
 	}
 }
 
-func (dv *DiffView) ScrollUp() {
-	if dv.scrollOffset > 0 {
-		dv.scrollOffset--
-	}
-}
+func (dv *DiffView) ScrollDown(termH int)     { dv.scrollBy(1, termH) }
+func (dv *DiffView) ScrollUp(termH int)       { dv.scrollBy(-1, termH) }
+func (dv *DiffView) ScrollHalfDown(termH int) { dv.scrollBy(dv.visibleLines(termH)/2, termH) }
+func (dv *DiffView) ScrollHalfUp(termH int)   { dv.scrollBy(-dv.visibleLines(termH)/2, termH) }
+func (dv *DiffView) ScrollPageDown(termH int) { dv.scrollBy(dv.visibleLines(termH), termH) }
 
 // Render clears the screen and draws the full-screen detail view.
 // termW and termH are the current terminal dimensions.
@@ -125,7 +129,7 @@ func (dv *DiffView) Render(out io.Writer, termW, termH int, cur, next navigator.
 		}
 		scrollInfo = fmt.Sprintf("(%d/%d) ", shown, len(dv.diffLines))
 	}
-	controls := fmt.Sprintf("j↓ k↑ scroll %s n next  p prev  d details:off  q quit", scrollInfo)
+	controls := fmt.Sprintf("j↓ k↑  ^D/spc ⇟  ^U ⇞  %s n next  p prev  d details:off  q quit", scrollInfo)
 	fmt.Fprintf(out, "%s\r", limitWidth(controls, termW))
 }
 

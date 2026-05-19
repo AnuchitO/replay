@@ -252,7 +252,29 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 
 		case 'k':
 			if dv.Active {
-				dv.ScrollUp()
+				_, termH, _ := term.GetSize(int(os.Stdout.Fd()))
+				dv.ScrollUp(termH)
+				renderDetail()
+			}
+
+		case 4: // Ctrl+D — half page down
+			if dv.Active {
+				_, termH, _ := term.GetSize(int(os.Stdout.Fd()))
+				dv.ScrollHalfDown(termH)
+				renderDetail()
+			}
+
+		case 21: // Ctrl+U — half page up
+			if dv.Active {
+				_, termH, _ := term.GetSize(int(os.Stdout.Fd()))
+				dv.ScrollHalfUp(termH)
+				renderDetail()
+			}
+
+		case ' ': // Space — full page down
+			if dv.Active {
+				_, termH, _ := term.GetSize(int(os.Stdout.Fd()))
+				dv.ScrollPageDown(termH)
 				renderDetail()
 			}
 
@@ -267,7 +289,8 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 			switch seq[1] {
 			case 'A': // arrow up
 				if dv.Active {
-					dv.ScrollUp()
+					_, termH, _ := term.GetSize(int(os.Stdout.Fd()))
+					dv.ScrollUp(termH)
 					renderDetail()
 				}
 			case 'B': // arrow down
@@ -314,8 +337,11 @@ Replay mode controls:
   n          Next commit
   p          Previous commit
   d          Toggle next-commit diff preview (on/off)
-  j / ↓      Scroll diff down  (detail mode)
-  k / ↑      Scroll diff up    (detail mode)
+  j / ↓      Scroll diff down            (detail mode)
+  k / ↑      Scroll diff up              (detail mode)
+  Ctrl+D     Scroll half page down       (detail mode)
+  Ctrl+U     Scroll half page up         (detail mode)
+  Space      Scroll full page down       (detail mode)
   q          Quit and restore original state
   Ctrl+C     Quit and restore original state
 
