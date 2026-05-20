@@ -19,17 +19,18 @@ import (
 const defaultLogSize = 30
 
 // version is set at build time via -ldflags "-X main.version=<tag>".
-// Falls back to the module version embedded by go install.
-var version = "dev"
+// Empty string means not set — getVersion() will fall back to build info.
+var version = ""
 
 func getVersion() string {
-	if version != "dev" {
-		return version
+	if version != "" {
+		return version // explicitly set via ldflags (e.g. "dev" or "v1.1.2")
 	}
+	// Not built with ldflags — try module version embedded by go install.
 	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
 		return info.Main.Version
 	}
-	return version
+	return "dev"
 }
 
 func main() {
