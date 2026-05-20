@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 
 	"golang.org/x/term"
@@ -18,7 +19,18 @@ import (
 const defaultLogSize = 30
 
 // version is set at build time via -ldflags "-X main.version=<tag>".
+// Falls back to the module version embedded by go install.
 var version = "dev"
+
+func getVersion() string {
+	if version != "dev" {
+		return version
+	}
+	if info, ok := debug.ReadBuildInfo(); ok && info.Main.Version != "" && info.Main.Version != "(devel)" {
+		return info.Main.Version
+	}
+	return version
+}
 
 func main() {
 	cwd, err := os.Getwd()
@@ -37,7 +49,7 @@ func main() {
 			printUsage()
 			os.Exit(0)
 		case "-v", "--version", "version":
-			fmt.Printf("replay %s\n", version)
+			fmt.Printf("replay %s\n", getVersion())
 			os.Exit(0)
 		}
 	}
@@ -325,7 +337,7 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 }
 
 func printUsage() {
-	fmt.Printf("replay %s - interactively navigate Git commit history\n", version)
+	fmt.Printf("replay %s - interactively navigate Git commit history\n", getVersion())
 	fmt.Print(`
 Usage:
   replay                          Select a commit interactively
