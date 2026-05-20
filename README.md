@@ -1,81 +1,84 @@
-Absolutely! Here's a polished and updated version of your README for **`replay`**, making it clearer, structured, and beginner-friendly while keeping it concise:
-
----
-
 # replay
 
-**Interactive CLI tool to replay local Git history commit-by-commit with seamless next/previous navigation.**
+Interactive CLI to walk through a Git repository commit by commit — forward and back, with an optional diff preview of what comes next.
 
----
+## Installation
 
-## 🚀 Features
-
-* Navigate your Git history **commit by commit**
-* Interactive **next/previous** controls
-* Quickly view project state at any commit
-* Easy to install and run
-
----
-
-## 💻 Installation
-
-Make sure you have [Go](https://golang.org/dl/) installed.
-
-### Option 1: Install directly using Go
+### via go install
 
 ```bash
 go install github.com/anuchito/replay/cmd/replay@latest
 ```
 
-* The binary will be installed to `$(go env GOPATH)/bin` (add it to your `PATH` if necessary).
+> **Version shows `dev` after installing?**
+> The Go module proxy caches releases and can lag a few minutes behind a new tag.
+> Use an explicit version or bypass the proxy:
+>
+> ```bash
+> # pin to a specific version
+> go install github.com/anuchito/replay/cmd/replay@v1.1.3
+>
+> # or fetch directly from GitHub, skipping the proxy
+> GOPROXY=direct go install github.com/anuchito/replay/cmd/replay@latest
+> ```
 
-### Option 2: Build from source
+### Build from source
 
 ```bash
 git clone https://github.com/anuchito/replay.git
 cd replay
-go build -o replay ./cmd/replay
+make build          # builds ./replay, version stamped from git tag
+make install-dev    # installs as replay-dev into GOBIN
 ```
 
----
+`make install-dev` stamps the version from the current git tag when the tree is clean, or `dev` when there are uncommitted changes.
 
-## 🎯 Usage
+## Usage
 
-Run the tool in a Git repository:
+Run inside any Git repository:
 
 ```bash
-replay
+replay                        # pick a starting commit interactively
+replay <start>                # replay from a commit to HEAD
+replay <start> <end>          # replay a specific range
+replay --version              # print version
+replay --help                 # print help
 ```
 
-**Navigation Controls:**
+## Controls
 
-* `n` → next commit
-* `p` → previous commit
-* `q` → quit and restore original branch
+### Commit picker
 
-**Optional arguments:**
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Move down |
+| `k` / `↑` | Move up |
+| `Ctrl+D` | Half page down |
+| `Ctrl+U` | Half page up |
+| `Enter` | Select commit |
+| `q` | Quit |
 
-```bash
-replay <start-commit>          # Start from a specific commit
-replay <start-commit> <end-commit>  # Replay a commit range
-```
+### Replay mode
 
----
+| Key | Action |
+|-----|--------|
+| `n` | Next commit |
+| `p` | Previous commit |
+| `d` | Toggle next-commit diff preview on/off |
+| `q` / `Ctrl+C` | Quit and restore original branch |
 
-## 📌 Notes
+### Diff preview (when `d` is on)
 
-* Only works in local Git repositories
-* No published binaries yet; Go is required to build or install
-* Original branch will be restored after quitting
+| Key | Action |
+|-----|--------|
+| `j` / `↓` | Scroll down one line |
+| `k` / `↑` | Scroll up one line |
+| `Ctrl+D` | Half page down |
+| `Ctrl+U` | Half page up |
+| `Space` | Full page down |
 
----
+## Notes
 
-## 🤝 Contributing
-
-Contributions and suggestions are welcome! Feel free to open issues or pull requests.
-
----
-
-I can also create a **more “GitHub-friendly” version with badges, table of contents, and examples** to make it look professional if you want.
-
-Do you want me to do that next?
+- Requires a clean working tree to start (no uncommitted changes)
+- Original branch or HEAD is always restored on exit, even on Ctrl+C or error
+- Diff preview shows the changes the **next** commit will introduce, before you apply it
