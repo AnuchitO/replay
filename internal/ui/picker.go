@@ -41,6 +41,20 @@ func (p *Picker) MoveUp() {
 	}
 }
 
+func (p *Picker) HalfPageDown() {
+	half := p.pageSize / 2
+	for range half {
+		p.MoveDown()
+	}
+}
+
+func (p *Picker) HalfPageUp() {
+	half := p.pageSize / 2
+	for range half {
+		p.MoveUp()
+	}
+}
+
 func (p *Picker) Selected() navigator.Commit {
 	return p.commits[p.cursor]
 }
@@ -98,7 +112,7 @@ func PickCommit(commits []navigator.Commit, in io.Reader, out io.Writer, pageSiz
 
 	// Print header (stays fixed)
 	fmt.Fprint(out, "Select a commit to replay from:\r\n")
-	fmt.Fprint(out, "j/↓ down  k/↑ up  Enter select  q quit\r\n")
+	fmt.Fprint(out, "j/↓ down  k/↑ up  ^D half-page down  ^U half-page up  Enter select  q quit\r\n")
 	fmt.Fprint(out, "\r\n")
 
 	// Initial render
@@ -116,6 +130,10 @@ func PickCommit(commits []navigator.Commit, in io.Reader, out io.Writer, pageSiz
 			p.MoveDown()
 		case 'k':
 			p.MoveUp()
+		case 4: // Ctrl+D — half page down
+			p.HalfPageDown()
+		case 21: // Ctrl+U — half page up
+			p.HalfPageUp()
 		case '\r', '\n':
 			selected := p.Selected()
 			return &selected, nil
