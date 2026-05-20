@@ -17,6 +17,9 @@ import (
 
 const defaultLogSize = 30
 
+// version is set at build time via -ldflags "-X main.version=<tag>".
+var version = "dev"
+
 func main() {
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -27,11 +30,14 @@ func main() {
 	client := git.NewClient(cwd)
 	display := ui.New(os.Stdout)
 
-	// Handle help flags
+	// Handle help/version flags
 	if len(os.Args) >= 2 {
 		switch os.Args[1] {
 		case "-h", "--help", "help":
 			printUsage()
+			os.Exit(0)
+		case "-v", "--version", "version":
+			fmt.Printf("replay %s\n", version)
 			os.Exit(0)
 		}
 	}
@@ -319,13 +325,14 @@ func run(client git.GitClient, display *ui.UI, opts app.RunOptions) error {
 }
 
 func printUsage() {
-	fmt.Print(`replay - interactively navigate Git commit history
-
+	fmt.Printf("replay %s - interactively navigate Git commit history\n", version)
+	fmt.Print(`
 Usage:
   replay                          Select a commit interactively
   replay <start-commit>           Replay from commit to HEAD
   replay <start-commit> <end>     Replay from commit to end commit
   replay -h, --help               Show this help
+  replay -v, --version            Show version
 
 Interactive picker controls:
   j / ↓      Move down
