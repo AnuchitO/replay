@@ -16,12 +16,13 @@ func New(out io.Writer) *UI {
 }
 
 func (u *UI) PrintBanner() {
-	fmt.Fprintln(u.out, "Replay Mode")
-	fmt.Fprintln(u.out, "-----------")
-	fmt.Fprintln(u.out, "n → next")
-	fmt.Fprintln(u.out, "p → previous")
-	fmt.Fprintln(u.out, "q → quit")
-	fmt.Fprintln(u.out)
+	fmt.Fprint(u.out, "Replay Mode\r\n")
+	fmt.Fprint(u.out, "-----------\r\n")
+	fmt.Fprint(u.out, "n → next\r\n")
+	fmt.Fprint(u.out, "p → previous\r\n")
+	fmt.Fprint(u.out, "d → toggle next commit diff\r\n")
+	fmt.Fprint(u.out, "q → quit\r\n")
+	fmt.Fprint(u.out, "\r\n")
 }
 
 func (u *UI) PrintCommit(commit navigator.Commit, current, total int) {
